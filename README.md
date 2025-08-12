@@ -4,7 +4,7 @@ This repository is for Holberton School's "Simple Shell" project
 
 ## Installation
 
-sh```
+```sh
 #clone repository
 git clone https://github.com/hsnliqdrv/holbertonschool-simple_shell
 #compile shell
@@ -13,7 +13,7 @@ gcc -Wall -Werror -Wextra -pedantic -std=gnu89 *.c -o hsh
 
 ## Usage
 
-sh```
+```sh
 #Interactive mode
 $ ./hsh
 ($) /bin/ls
