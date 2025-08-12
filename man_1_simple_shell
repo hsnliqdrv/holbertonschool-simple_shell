@@ -1,0 +1,29 @@
+.\" Manpage for Simple Shell
+.TH HSH 1 "August 2025"
+.SH NAME
+hsh \- A Simple Shell
+.SH SYNOPSIS
+.B hsh
+.SH DESCRIPTION
+A simple shell that can run in interactive or non-interactive modes
+.SH EXAMPLES
+.B Interactive Mode:
+.sp
+$ ./hsh
+.br
+($) /bin/ls
+.br
+hsh main.c shell.c
+.sp
+.B Non-Interactive Mode
+.sp
+$ echo "/bin/ls" | ./hsh
+.br
+hsh main.c shell.c test_ls_2
+.SH AUTHORS
+- Hasanali Qadirov
+.br
+- Jamil Hajizade
+.SH COPYRIGHT
+This is free software; see the source for copying conditions.
+
