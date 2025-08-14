@@ -38,15 +38,13 @@ char *readline()
 int main(int argc, char **argv)
 {
 	extern char **environ;
-	const char *prompt = "#cisfun$ ";
-	int print_prompt = isatty(STDIN_FILENO);
+	char *prompt = "#cisfun$ ", *cmd, *_argv[] = {NULL, NULL};
+	int print_prompt = isatty(STDIN_FILENO), status;
 
 	if (argc < 1)
 		return (1);
 	while (1)
 	{
-		char *cmd;
-		char *_argv[] = {NULL, NULL};
 		pid_t pid;
 
 		if (print_prompt)
@@ -56,20 +54,15 @@ int main(int argc, char **argv)
 			break;
 		_argv[0] = cmd;
 		pid = fork();
-		if (pid < 0)
+		if (pid == 0)
 		{
+			if (execve(_argv[0], _argv, environ) == -1)
+				perror(argv[0]);
+			return (1);
 		}
-		else if (pid == 0)
-		{
-		}
-		else
-		{
-		}
-		if (execve(_argv[0], _argv, environ) == -1)
-			perror(argv[0]);
-		printf("\n");
+		if (pid > 0)
+			waitpid(pid, &status, 0);
 		free(cmd);
 	}
-	printf("end");
 	return (0);
 }
