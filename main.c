@@ -13,16 +13,12 @@
  */
 char *readline()
 {
-	char *str = malloc(256);
+	size_t size = 0;
+	char *str = NULL;
 	size_t i = 0;
 
-	if (!str)
+	if (getline(&str, &size, stdin) == -1)
 		return (NULL);
-	if (!fgets(str, 256, stdin))
-	{
-		free(str);
-		return (NULL);
-	}
 	while (str[i] && str[i] != '\n')
 		i++;
 	if (str[i] == '\n')
@@ -31,13 +27,14 @@ char *readline()
 }
 /**
  * main - the entry function
+ * @argc: argument count
+ * @argv: argument list
  *
  * Return: returns 0 in success
  * any other code indicates an error
  */
 int main(int argc, char **argv)
 {
-	extern char **environ;
 	char *prompt = "#cisfun$ ", *cmd, *_argv[] = {NULL, NULL};
 	int print_prompt = isatty(STDIN_FILENO), status;
 
