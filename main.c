@@ -58,7 +58,10 @@ char *readline()
 	size_t i = 0;
 
 	if (getline(&str, &size, stdin) == -1)
+	{
+		free(str);
 		return (NULL);
+	}
 	while (str[i] && str[i] != '\n')
 		i++;
 	if (str[i] == '\n')
@@ -76,7 +79,7 @@ char *readline()
 int main(int argc, char **argv)
 {
 	char *prompt = "#cisfun$ ", *cmd, *_argv[] = {NULL, NULL};
-	int print_prompt = isatty(STDIN_FILENO), status;
+	int is_interactive = isatty(STDIN_FILENO), status;
 
 	signal(SIGINT, SIG_IGN);
 	if (argc < 1)
@@ -85,12 +88,13 @@ int main(int argc, char **argv)
 	{
 		pid_t pid;
 
-		if (print_prompt)
+		if (is_interactive)
 			printf("%s", prompt);
 		cmd = readline();
 		if (!cmd)
 		{
-			putchar('\n');
+			if (is_interactive)
+				putchar('\n');
 			break;
 		}
 		strip(cmd);
