@@ -25,29 +25,6 @@ size_t _strlen(char *s)
 	return (l);
 }
 /**
- * strip - strips string from spaces
- * @s: string
- */
-void strip(char *s)
-{
-	size_t i = 0, f, l;
-
-	if (!s)
-		return;
-	i = strlen(s);
-	while (i > 0 && s[i - 1] == ' ')
-		i--;
-	if (s[i] == ' ')
-		s[i] = '\0';
-	l = i;
-	i = 0;
-	while (i < l && s[i] == ' ')
-		i++;
-	f = i;
-	for (i = f; i <= l; i++)
-		s[i - f] = s[i];
-}
-/**
  * readline - reads a line from stdin
  * Return: dynamically allocated string
  */
@@ -69,6 +46,37 @@ char *readline()
 	return (str);
 }
 /**
+ * words - splits string into words
+ * @s: string
+ *
+ * Return: array of words (null terminated)
+ */
+char **words(char *s)
+{
+	char **array;
+	size_t c = 0, i = 0, sp = 1;
+
+	while (s[i])
+	{
+		if (s[i] == ' ')
+			sp = 1;
+		else
+		{
+			if (sp)
+				c++;
+			sp = 0;
+		}
+		i++;
+	}
+	array = malloc(sizeof(char *) * (c + 1));
+	if (!array)
+		return (NULL);
+	array[0] = strtok(s, " ");
+	for (i = 1; i <= c; i++)
+		array[i] = strtok(NULL, " ");
+	return (array);
+}
+/**
  * main - the entry function
  * @argc: argument count
  * @argv: argument list
@@ -78,16 +86,15 @@ char *readline()
  */
 int main(int argc, char **argv)
 {
-	char *prompt = "#cisfun$ ", *cmd, *_argv[] = {NULL, NULL};
+	char *prompt = "#cisfun$ ", *cmd, **_argv;
 	int is_interactive = isatty(STDIN_FILENO), status;
+	pid_t pid;
 
 	signal(SIGINT, SIG_IGN);
 	if (argc < 1)
 		return (1);
 	while (1)
 	{
-		pid_t pid;
-
 		if (is_interactive)
 			printf("%s", prompt);
 		cmd = readline();
@@ -97,20 +104,22 @@ int main(int argc, char **argv)
 				putchar('\n');
 			break;
 		}
-		strip(cmd);
-		_argv[0] = cmd;
-		if (strlen(cmd) > 0)
+		_argv = words(cmd);
+		if (_argv[0])
 		{
 			pid = fork();
 			if (pid == 0)
 			{
 				if (execve(_argv[0], _argv, environ) == -1)
 					perror(argv[0]);
+				free(_argv);
+				free(cmd);
 				return (1);
 			}
 			if (pid > 0)
 				waitpid(pid, &status, 0);
 		}
+		free(_argv);
 		free(cmd);
 	}
 	return (0);
