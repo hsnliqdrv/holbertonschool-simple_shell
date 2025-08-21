@@ -7,22 +7,28 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include "shell.h"
-
 /**
- * _strlen - find length of string
- * @s: string
+ * copy_path - returns a dynamically allocated copy of PATH
+ * @envp: environment variables array
  *
- * Return: length
+ * Return: pointer to copy, or NULL if PATH not found
  */
-size_t _strlen(char *s)
+char *copy_path(char *envp[])
 {
-	size_t l = 0;
+	char *path_env = NULL;
+	int i;
 
-	if (!s)
-		return (0);
-	while (s[l])
-		l++;
-	return (l);
+	for (i = 0; envp[i]; i++)
+	{
+		if (strncmp(envp[i], "PATH=", 5) == 0)
+		{
+			path_env = envp[i] + 5;
+			break;
+		}
+	}
+	if (!path_env)
+		return (NULL);
+	return (strdup(path_env));
 }
 /**
  * readline - reads a line from stdin
@@ -46,35 +52,36 @@ char *readline()
 	return (str);
 }
 /**
- * words - splits string into words
- * @s: string
+ * resolve - resolves path to a command
+ * @cmd: command
  *
- * Return: array of words (null terminated)
+ * Return: full path if exists
+ * else NULL
  */
-char **words(char *s)
+char *resolve(char *cmd)
 {
-	char **array;
-	size_t c = 0, i = 0, sp = 1;
-
-	while (s[i])
+	if (cmd)
 	{
-		if (s[i] == ' ')
-			sp = 1;
-		else
+		char *path, *token, *full = NULL;
+
+		if (cmd[0] == '/')
+			return (access(cmd, F_OK) == 0 ? strdup(cmd) : NULL);
+		path = copy_path(environ);
+		token = strtok(path, ":");
+		while (token)
 		{
-			if (sp)
-				c++;
-			sp = 0;
+			full = malloc(strlen(token) + strlen(cmd) + 2);
+			sprintf(full, "%s/%s", token, cmd);
+			if (access(full, F_OK) == 0)
+				break;
+			free(full);
+			full = NULL;
+			token = strtok(NULL, ":");
 		}
-		i++;
+		free(path);
+		return (full);
 	}
-	array = malloc(sizeof(char *) * (c + 1));
-	if (!array)
-		return (NULL);
-	array[0] = strtok(s, " ");
-	for (i = 1; i <= c; i++)
-		array[i] = strtok(NULL, " ");
-	return (array);
+	return (NULL);
 }
 /**
  * main - the entry function
@@ -86,7 +93,7 @@ char **words(char *s)
  */
 int main(int argc, char **argv)
 {
-	char *prompt = "#cisfun$ ", *cmd, **_argv;
+	char *prompt = "#cisfun$ ", *cmd, **_argv, *res;
 	int is_interactive = isatty(STDIN_FILENO), status;
 	pid_t pid;
 
@@ -105,13 +112,15 @@ int main(int argc, char **argv)
 			break;
 		}
 		_argv = words(cmd);
-		if (_argv[0])
+		res = resolve(_argv[0]);
+		if (res)
 		{
 			pid = fork();
 			if (pid == 0)
 			{
-				if (execve(_argv[0], _argv, environ) == -1)
+				if (execve(res, _argv, environ) == -1)
 					perror(argv[0]);
+				free(res);
 				free(_argv);
 				free(cmd);
 				return (1);
@@ -119,6 +128,7 @@ int main(int argc, char **argv)
 			if (pid > 0)
 				waitpid(pid, &status, 0);
 		}
+		free(res);
 		free(_argv);
 		free(cmd);
 	}
