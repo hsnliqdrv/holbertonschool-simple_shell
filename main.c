@@ -163,9 +163,9 @@ int main(int argc, char **argv)
 				status = 127;
 			}
 			free(res);
-			free(_argv);
-			free(cmd);
 		}
+		free(_argv);
+		free(cmd);
 		line++;
 	}
 	return (status);
