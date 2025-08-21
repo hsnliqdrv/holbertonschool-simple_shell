@@ -132,7 +132,7 @@ int main(int argc, char **argv)
 			if (pid > 0)
 				waitpid(pid, &status, 0);
 		}
-		else
+		else if (_argv[0])
 			fprintf(stderr, "%s: %d: %s: %s\n", argv[0], line,
 				_argv[0], "not found");
 		free(res);
