@@ -6,23 +6,22 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <limits.h>
 #include "shell.h"
 /**
  * copy_path - returns a dynamically allocated copy of PATH
- * @envp: environment variables array
- *
  * Return: pointer to copy, or NULL if PATH not found
  */
-char *copy_path(char *envp[])
+char *copy_path()
 {
 	char *path_env = NULL;
 	int i;
 
-	for (i = 0; envp[i]; i++)
+	for (i = 0; environ[i]; i++)
 	{
-		if (strncmp(envp[i], "PATH=", 5) == 0)
+		if (strncmp(environ[i], "PATH=", 5) == 0)
 		{
-			path_env = envp[i] + 5;
+			path_env = environ[i] + 5;
 			break;
 		}
 	}
@@ -62,24 +61,33 @@ char *resolve(char *cmd)
 {
 	if (cmd)
 	{
-		char *path, *token, *full = NULL;
-
-		if (cmd[0] == '/')
-			return (access(cmd, F_OK) == 0 ? strdup(cmd) : NULL);
-		path = copy_path(environ);
-		token = strtok(path, ":");
-		while (token)
+		if (cmd[0] != '/')
 		{
-			full = malloc(strlen(token) + strlen(cmd) + 2);
-			sprintf(full, "%s/%s", token, cmd);
-			if (access(full, F_OK) == 0)
-				break;
-			free(full);
-			full = NULL;
-			token = strtok(NULL, ":");
+			char *path, *token, *full = NULL;
+
+			if (strchr(cmd, '/'))
+			{
+				path = malloc(PATH_MAX);
+				getcwd(path, PATH_MAX);
+
+			}
+			else
+				path = copy_path();
+			token = strtok(path, ":");
+			while (token)
+			{
+				full = malloc(strlen(token) + strlen(cmd) + 2);
+				sprintf(full, "%s/%s", token, cmd);
+				if (access(full, X_OK) == 0)
+					break;
+				free(full);
+				full = NULL;
+				token = strtok(NULL, ":");
+			}
+			free(path);
+			return (full);
 		}
-		free(path);
-		return (full);
+		return (access(cmd, X_OK) == 0 ? strdup(cmd) : NULL);
 	}
 	return (NULL);
 }
@@ -94,13 +102,11 @@ char *resolve(char *cmd)
 int main(int argc, char **argv)
 {
 	char *prompt = "#cisfun$ ", *cmd, **_argv, *res;
-	int is_interactive = isatty(STDIN_FILENO), status;
+	int is_interactive = isatty(STDIN_FILENO), status, line = 1;
 	pid_t pid;
 
 	signal(SIGINT, SIG_IGN);
-	if (argc < 1)
-		return (1);
-	while (1)
+	while (argc)
 	{
 		if (is_interactive)
 			printf("%s", prompt);
@@ -119,18 +125,20 @@ int main(int argc, char **argv)
 			if (pid == 0)
 			{
 				if (execve(res, _argv, environ) == -1)
-					perror(argv[0]);
-				free(res);
-				free(_argv);
-				free(cmd);
-				return (1);
+					fprintf(stderr, "%s: %d: %s: %s\n",
+				argv[0], line, _argv[0], strerror(errno));
+				_exit(1);
 			}
 			if (pid > 0)
 				waitpid(pid, &status, 0);
 		}
+		else
+			fprintf(stderr, "%s: %d: %s: %s\n", argv[0], line,
+				_argv[0], strerror(errno));
 		free(res);
 		free(_argv);
 		free(cmd);
+		line++;
 	}
 	return (0);
 }
