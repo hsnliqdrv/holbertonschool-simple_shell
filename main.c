@@ -120,7 +120,11 @@ int main(int argc, char **argv)
         }
         _argv = words(cmd);
 	if (strncmp(_argv[0], "exit", 4) == 0)
+	{
+		free(cmd);
+		free(_argv);
 		exit(status);
+	}
         res = resolve(_argv[0]);
         if (res)
         {
