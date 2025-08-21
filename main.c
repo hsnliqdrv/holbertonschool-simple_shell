@@ -126,7 +126,7 @@ int main(int argc, char **argv)
 			{
 				if (execve(res, _argv, environ) == -1)
 					fprintf(stderr, "%s: %d: %s: %s\n",
-				argv[0], line, _argv[0], strerror(errno));
+				argv[0], line, _argv[0], "not found");
 				_exit(1);
 			}
 			if (pid > 0)
@@ -134,7 +134,7 @@ int main(int argc, char **argv)
 		}
 		else
 			fprintf(stderr, "%s: %d: %s: %s\n", argv[0], line,
-				_argv[0], strerror(errno));
+				_argv[0], "not found");
 		free(res);
 		free(_argv);
 		free(cmd);
