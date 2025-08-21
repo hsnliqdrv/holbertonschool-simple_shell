@@ -119,6 +119,8 @@ int main(int argc, char **argv)
             break;
         }
         _argv = words(cmd);
+	if (strncmp(_argv[0], "exit", 4) == 0)
+		exit(status);
         res = resolve(_argv[0]);
         if (res)
         {
@@ -153,5 +155,5 @@ int main(int argc, char **argv)
         free(cmd);
         line++;
     }
-    return status;
+    return (status);
 }
