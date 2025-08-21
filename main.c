@@ -101,63 +101,72 @@ char *resolve(char *cmd)
  */
 int main(int argc, char **argv)
 {
-    char *prompt = "#cisfun$ ", *cmd, **_argv, *res;
-    int is_interactive = isatty(STDIN_FILENO), status = 0, line = 1;
-    pid_t pid;
+	char *prompt = "#cisfun$ ", *cmd, **_argv, *res;
+	int is_interactive = isatty(STDIN_FILENO), status = 0, line = 1;
+	pid_t pid;
 
-    signal(SIGINT, SIG_IGN);
+	signal(SIGINT, SIG_IGN);
 
-    while (argc)
-    {
-        if (is_interactive)
-            printf("%s", prompt);
-        cmd = readline();
-        if (!cmd)
-        {
-            if (is_interactive)
-                putchar('\n');
-            break;
-        }
-        _argv = words(cmd);
-	if (strncmp(_argv[0], "exit", 4) == 0)
+	while (argc)
 	{
-		free(cmd);
-		free(_argv);
-		exit(status);
+		if (is_interactive)
+			printf("%s", prompt);
+		cmd = readline();
+		if (!cmd)
+		{
+			if (is_interactive)
+				putchar('\n');
+			break;
+		}
+		_argv = words(cmd);
+		if (strncmp(_argv[0], "exit", 4) == 0)
+		{
+			free(cmd);
+			free(_argv);
+			exit(status);
+		}
+		else if (strncmp(_argv[0], "env", 3) == 0)
+		{
+			char **str;
+			for (str = environ; *str != NULL; str++)
+				printf("%s\n", *str);
+		}
+		else
+		{
+			res = resolve(_argv[0]);
+			if (res)
+			{
+				pid = fork();
+				if (pid == 0)
+				{
+					if (execve(res, _argv, environ) == -1)
+					{
+						if (errno == ENOENT)
+							fprintf(stderr, "%s: %d: %s: %s\n",
+							argv[0], line, _argv[0], "not found");
+						_exit(errno == ENOENT ? 127 : 1);
+					}
+				}
+				else if (pid > 0)
+				{
+					waitpid(pid, &status, 0);
+					if (WIFEXITED(status))
+						status = WEXITSTATUS(status);
+					else
+						status = 1;
+				}
+			}
+			else if (_argv[0])
+			{
+				fprintf(stderr, "%s: %d: %s: %s\n", argv[0], line,
+					_argv[0], "not found");
+				status = 127;
+			}
+			free(res);
+			free(_argv);
+			free(cmd);
+		}
+		line++;
 	}
-        res = resolve(_argv[0]);
-        if (res)
-        {
-            pid = fork();
-            if (pid == 0)
-            {
-                if (execve(res, _argv, environ) == -1)
-                {
-                    if (errno == ENOENT)
-                        fprintf(stderr, "%s: %d: %s: %s\n",
-                                argv[0], line, _argv[0], "not found");
-                    _exit(errno == ENOENT ? 127 : 1);
-                }
-            }
-            else if (pid > 0)
-            {
-                waitpid(pid, &status, 0);
-                if (WIFEXITED(status))
-                    status = WEXITSTATUS(status);
-                else
-                    status = 1;
-            }
-        }
-        else if (_argv[0])
-        {
-            fprintf(stderr, "%s: %d: %s: %s\n", argv[0], line,
-                    _argv[0], "not found");
-            status = 127;
-        }
-        free(res);
-        free(_argv);
-        free(cmd);
-        line++;
-    }
-    return (status);
+	return (status);
 }
